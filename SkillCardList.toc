@@ -1,0 +1,7 @@
+## Interface: 30300
+## Title: Skill Card List
+## Notes: Browse Ascension skill cards (abilities and talents) with owned and build status, and see which talents improve each ability. Type /cards.
+## Version: 1.17
+## SavedVariables: SkillCardListDB
+SkillCardSeed.lua
+SkillCardList.lua
