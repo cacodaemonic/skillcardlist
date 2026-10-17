@@ -36,6 +36,3 @@ A World of Warcraft 3.3.5 addon for **Ascension (Wildcard)** that lists every sk
 
 Some tooltips only show "This uses X modifiers" while Shift is held. A built-in table (`SkillCardSeed.lua`) already covers these, so no Shift is needed. If Ascension adds new abilities of this kind, hold Shift during a Rescan, or hover them with Shift held, and the addon saves what it reads.
 
-## Companion addon
-
-**Card Export** exports your card list to text and imports it on another account.
