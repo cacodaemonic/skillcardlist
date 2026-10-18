@@ -13,7 +13,7 @@ Coded by Claude.
 
 ## Use
 
-- Type `/cards` or click the book button on the minimap.
+- Type `/cards` or click the book button on the minimap.  The first time you run it for your session, Skill Card List will open the Ascension Skill Cards to scan in all the cards.  You will see the Ascension Skill Cards Window open as it does this, and then it will close it.  Anytime you click rescan, it will do this.
 - Click **Rescan** the first time (and after you collect new cards).
 - Search by name, card ID, item ID or spell ID.
 - Filter by owned state, kind (abilities / talents) and normal / golden.
