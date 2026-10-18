@@ -18,6 +18,7 @@ A World of Warcraft COA  addon for **Ascension (Wildcard)** that lists every ski
 - Filter by owned state, kind (abilities / talents) and normal / golden.
 - **Owned** shows account ownership. **In build** shows what the current character has learned.
 - Click a card to open a synergy window: talents that improve an ability, abilities a talent improves, and abilities that share modifiers. Hover any entry for its tooltip, click one to follow it.
+- You can also access via the icon that is place on the mini map
 
 ## Commands
 
