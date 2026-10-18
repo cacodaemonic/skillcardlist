@@ -1,6 +1,7 @@
 # Skill Card List
 
 A World of Warcraft COA  addon for **Ascension (Wildcard)** that lists every skill card, abilities and talents, and shows what your account owns and what is in your current build. It also shows which talents improve each ability.
+Coded by Claude.
 
 ## Install
 
