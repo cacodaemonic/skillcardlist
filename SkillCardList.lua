@@ -316,8 +316,8 @@ end
 -- Second source: the collection list the Skill Cards window uses, read by index per card type.
 -- It reaches cards the per-ID lookup returns nothing for (e.g. cards you do not own yet).
 local indexCounts = {}
-local function EnumerateByIndex()
-    wipe(indexCounts)
+local function EnumerateByIndex(keep)
+    if not keep then wipe(indexCounts) end
     local have, types, seen = {}, {}, {}
     for _, c in ipairs(cards) do have[c.id] = true end
     local function AddType(t) if t and t ~= "" and not seen[t] then seen[t] = true types[#types + 1] = t end end
@@ -339,9 +339,85 @@ local function EnumerateByIndex()
                 AddCardFromInfo(t)
             end
         end
-        indexCounts[typ] = n
+        indexCounts[typ] = math.max(indexCounts[typ] or 0, n)
     end
     return added
+end
+
+-- The game's list only fills while its Collections window is open on the Skill Cards tab (tab 3).
+-- Open it briefly, wait for it to load, run `callback`, then put the window back as it was.
+local SKILL_CARDS_TAB = 3
+local TALENT_SUBTAB = 4                 -- SkillCardsFrameTab4 = "Talent Cards"
+local prep = CreateFrame("Frame")
+prep:Hide()
+local function Wait(seconds, fn)
+    local waited = 0
+    prep:SetScript("OnUpdate", function(self, el)
+        waited = waited + el
+        if waited < seconds then return end
+        self:Hide()
+        fn()
+    end)
+    prep:Show()
+end
+
+local function PrepareList(callback)
+    local C = _G.Collections
+    if not (C and C.SelectTabID) then callback(function() end) return end
+    local wasShown = C:IsShown() and true or false
+    local ourShown = frame:IsShown() and true or false     -- opening/closing the game's window can close ours
+    local function KeepOurs() if ourShown and not frame:IsShown() then frame:Show() end end
+    local prevTab
+    if C.GetCurrentTabID then local ok, id = pcall(C.GetCurrentTabID, C) if ok then prevTab = id end end
+    if not wasShown and not pcall(ShowUIPanel, C) then pcall(C.Show, C) end
+    pcall(C.SelectTabID, C, SKILL_CARDS_TAB)
+    KeepOurs()
+    local function finish()
+        if prevTab and prevTab ~= SKILL_CARDS_TAB then pcall(C.SelectTabID, C, prevTab) end
+        if not wasShown then if not pcall(C.Hide, C) then pcall(HideUIPanel, C) end end
+        KeepOurs()
+    end
+    Wait(0.7, function()
+        local ok, err = pcall(callback, finish)
+        if not ok then print("Skill Card List: " .. tostring(err)) finish() end
+    end)
+end
+
+-- The game's list follows its window's filter (default: Collected Only).  SetSkillCardFilter takes
+-- (cardType, searchText, { "FILTER_COLLECTED" | "FILTER_NOT_COLLECTED", ... }); an empty list shows all cards.
+local FILTER_TYPES = { "SKILL_CARD_DEFAULT_NORMAL", "SKILL_CARD_DEFAULT_GOLDEN",
+                       "SKILL_CARD_TALENT_NORMAL", "SKILL_CARD_TALENT_GOLDEN" }
+local function SetGameFilters(list)
+    local set = C_SkillCardCollection and C_SkillCardCollection.SetSkillCardFilter
+    if not set then return end
+    for _, typ in ipairs(FILTER_TYPES) do pcall(set, typ, "", list) end
+end
+
+-- Show all cards, read the Ability list, click the Talent Cards sub-tab, read that list, then restore.
+local function ReadBothLists(done)
+    local S = _G.SkillCardsFrame
+    local talentTab = _G["SkillCardsFrameTab" .. TALENT_SUBTAB]
+    local prevSub = S and S.selectedTab
+    local added = 0
+    local function restore()
+        SetGameFilters({ "FILTER_COLLECTED" })          -- the game's default
+        local prevBtn = prevSub and prevSub ~= TALENT_SUBTAB and _G["SkillCardsFrameTab" .. prevSub]
+        if prevBtn and prevBtn.Click then pcall(prevBtn.Click, prevBtn) end
+        done(added)
+    end
+    SetGameFilters({})
+    Wait(0.5, function()
+        added = EnumerateByIndex()
+        if not (talentTab and talentTab.Click) then restore() return end
+        pcall(talentTab.Click, talentTab)
+        Wait(0.5, function()
+            SetGameFilters({})                          -- the tab may have re-applied its default
+            Wait(0.5, function()
+                added = added + EnumerateByIndex(true)
+                restore()
+            end)
+        end)
+    end)
 end
 
 local scanner = CreateFrame("Frame")
@@ -352,12 +428,23 @@ scanner:SetScript("OnUpdate", function(self)
     nextID = last + 1
     if nextID > MAXID then
         self:Hide()
-        scanning, scanned = false, true
-        extraFound = EnumerateByIndex()
-        if #cards == 0 then
-            status:SetText("|cffff2020No cards found.|r Open the Skill Cards window once, then click Rescan.")
-        end
-        Rebuild()
+        status:SetText("Reading the game's card list...")
+        PrepareList(function(finish)
+            ReadBothLists(function(added)
+                finish()
+                scanning, scanned = false, true
+                extraFound = added
+                local total = 0
+                for _, n in pairs(indexCounts) do total = total + n end
+                if total < 100 then
+                    print("Skill Card List: the game's card list returned only " .. total .. " cards. If the Skill Cards window has a search or filter set, clear it and click Rescan.")
+                end
+                if #cards == 0 then
+                    status:SetText("|cffff2020No cards found.|r Open the Skill Cards window once, then click Rescan.")
+                end
+                Rebuild()
+            end)
+        end)
     else
         status:SetText("Scanning... " .. math.floor(nextID * 100 / MAXID) .. "%")
     end
