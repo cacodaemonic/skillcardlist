@@ -374,7 +374,7 @@ local function PrepareList(callback)
     KeepOurs()
     local function finish()
         if prevTab and prevTab ~= SKILL_CARDS_TAB then pcall(C.SelectTabID, C, prevTab) end
-        if not wasShown then if not pcall(C.Hide, C) then pcall(HideUIPanel, C) end end
+        if not wasShown then if not pcall(HideUIPanel, C) then pcall(C.Hide, C) end end   -- the panel manager must see it close (else Escape stops opening the game menu)
         KeepOurs()
     end
     Wait(0.7, function()
